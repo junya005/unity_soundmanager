@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Junya005.AudioSystem
 {
+    /// <summary>音源設定用のデータアセットクラス</summary>
     [CreateAssetMenu(fileName = "AudioData", menuName = "Plugins/Junya005/AudioData")]
     public class SOAudioData : ScriptableObject
     {
