@@ -26,7 +26,7 @@ namespace Junya005.AudioSystem
             }
         }
 
-        private static void SetupInstance()
+        private static void SetupInstance(Action callBack = null)
         {
             instance = (SoundManager)FindObjectOfType(typeof(SoundManager));
             if (instance == null)
@@ -36,9 +36,11 @@ namespace Junya005.AudioSystem
                 instance = gameObj.AddComponent<SoundManager>();
                 DontDestroyOnLoad(gameObj);
             }
+
+            callBack?.Invoke();
         }
 
-        private void RemoveDuplicates()
+        private void RemoveDuplicates(Action callBack = null)
         {
             if (instance == null)
             {
@@ -49,42 +51,58 @@ namespace Junya005.AudioSystem
             {
                 Destroy(gameObject);
             }
+
+            callBack?.Invoke();
         }
 
         #endregion
 
         #region AudioLogic
 
+        /// <summary>音源のタイプ</summary>
         enum ESoundType
         {
             BGM,
             SE,
         }
 
+        /// <summary>
+        /// オーディオデータのパス、
+        /// データアセットのパスを変更する際はこれを編集してください
+        /// </summary>
+        /// <remarks>Resourcesからの相対的なパスです</remarks>
         private const string PATH_AUDIO_LIST = "AudioData";
 
+        /// <summary>データアセットの設定箇所</summary>
         private SOAudioData _audioList;
 
+        // Clipを格納するDictionary
         private Dictionary<string, AudioClip> _bgmAudioClips = new Dictionary<string, AudioClip>();
         private Dictionary<string, AudioClip> _seAudioClips = new Dictionary<string, AudioClip>();
 
+        // AudioSourceを格納するリスト
         private List<AudioSource> _bgmAudioSources = new List<AudioSource>();
         private List<AudioSource> _seAudioSources = new List<AudioSource>();
 
+        /// <summary>初期化フラグ</summary>
         private bool _isInitialized = false;
 
+        /// <summary>AudioデータのClipをDictionaryに登録</summary>
         private void InitializeAudio()
         {
             if (_isInitialized) return;
 
+            // オーディオのデータアセットを参照
             _audioList = Resources.Load<SOAudioData>(PATH_AUDIO_LIST);
 
+            // 見つからなければReturn
             if (_audioList == null)
             {
                 Debug.LogWarning("AudioDataが設定されていません");
                 return;
             }
 
+            // BGMのDictionaryを作成
             if (_audioList.BGMList.Count > 0)
             {
                 foreach (var clip in _audioList.BGMList)
@@ -93,6 +111,7 @@ namespace Junya005.AudioSystem
                 }
             }
 
+            // SEのDictionaryを作成
             if (_audioList.SEList.Count > 0)
             {
                 foreach (var clip in _audioList.SEList)
@@ -101,6 +120,7 @@ namespace Junya005.AudioSystem
                 }
             }
 
+            // 初期化フラグをオンに
             _isInitialized = true;
         }
 
@@ -108,7 +128,6 @@ namespace Junya005.AudioSystem
         /// <param name="name">clip file name</param>
         public void PlayBGM(string name)
         {
-            StopBGM();
             Play(name, ESoundType.BGM);
         }
 
@@ -150,7 +169,10 @@ namespace Junya005.AudioSystem
                     if (audioSource.isPlaying == false)
                     {
                         if (soundType == ESoundType.BGM)
+                        {
+                            StopBGM();
                             audioSource.loop = true;
+                        }
                         audioSource.clip = clip;
                         audioSource.Play();
                         return;
@@ -159,12 +181,14 @@ namespace Junya005.AudioSystem
 
                 /*
                 空いているAudioSourceがなければ新しく作成して追加(ObjectPoolパターン)
-                BGMもObjectPoolの対象だが、PlayBGMはStopBGMを実行してからなのと、
-                フェード処理実装の際に取り回しがいいのでこのまま
+                BGMもObjectPoolの対象だが、PlayBGMはStopBGMを実行してから行うためこのまま
                 */
                 AudioSource newAudioSource = this.gameObject.AddComponent<AudioSource>();
                 if (soundType == ESoundType.BGM)
+                {
+                    StopBGM();
                     newAudioSource.loop = true;
+                }
                 newAudioSource.clip = clip;
                 newAudioSource.Play();
 
@@ -197,9 +221,19 @@ namespace Junya005.AudioSystem
 
         /// <summary>BGMのボリュームを変更</summary>
         /// <param name="volume">ボリューム値</param>
-        public void SetBgmVolume(float volume)
+        public void SetBGMVolume(float volume)
         {
             foreach (var audioSource in _bgmAudioSources)
+            {
+                audioSource.volume = volume;
+            }
+        }
+
+        /// <summary>SEのボリュームを変更</summary>
+        /// <param name="volume">ボリューム値</param>
+        public void SetSEVolume(float volume)
+        {
+            foreach (var audioSource in _seAudioSources)
             {
                 audioSource.volume = volume;
             }
@@ -211,17 +245,14 @@ namespace Junya005.AudioSystem
         private static void Initialize()
         {
             new GameObject("SoundManager", typeof(SoundManager));
+
             SetupInstance();
         }
 
         private void Awake()
         {
-            RemoveDuplicates();
-        }
-
-        private void Start()
-        {
-            InitializeAudio();
+            Action InitAudio = () => InitializeAudio();
+            RemoveDuplicates(InitAudio);
         }
     }
 }

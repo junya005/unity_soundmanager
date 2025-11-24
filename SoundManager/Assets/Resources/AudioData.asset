@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d8af35fcb4dc3b4190b74938baf6889, type: 3}
   m_Name: AudioData
   m_EditorClassIdentifier: 
-  BGMList: []
-  SEList: []
+  BGMList:
+  - {fileID: 8300000, guid: 7c005166f32f4074aa8a7e9913d3631c, type: 3}
+  SEList:
+  - {fileID: 8300000, guid: b43eea3c2324e8f47a9997c50a2bad67, type: 3}
